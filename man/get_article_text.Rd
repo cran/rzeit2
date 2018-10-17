@@ -7,13 +7,13 @@
 get_article_text(url, timeout = NULL)
 }
 \arguments{
-\item{url}{character. a single character string or character vector.}
+\item{url}{character. A single character string or character vector.}
 
 \item{timeout}{integer. Seconds to wait between queries.}
 }
 \value{
 A named character vector with the respective text. If the content lies beyond the paywall
-the function returns "[PAYWALL] ZEIT PLUS CONTENT".
+the function returns "[ZEIT PLUS CONTENT] You need a ZEIT PLUS account to access this content.".
 }
 \description{
 Get the article text for a single url or a vector of urls.
@@ -22,9 +22,11 @@ Get the article text for a single url or a vector of urls.
 \code{get_article_text} is the function, which fetches and parses an article. This function may break in the future due to layout changes on the ZEIT ONLINE website.
 }
 \examples{
+\dontrun{
 url <- paste0("https://www.zeit.de/kultur/film/2018-04/",
 "tatort-frankfurt-unter-kriegern-obduktionsbericht")
 get_article_text(url = url)
+}
 
 }
 \author{

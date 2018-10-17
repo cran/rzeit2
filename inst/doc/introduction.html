@@ -12,7 +12,7 @@
 
 <meta name="author" content="Jan Dix" />
 
-<meta name="date" content="2018-07-11" />
+<meta name="date" content="2018-10-17" />
 
 <title>Introduction to rzeit2</title>
 
@@ -70,41 +70,51 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Introduction to rzeit2</h1>
 <h4 class="author"><em>Jan Dix</em></h4>
-<h4 class="date"><em>2018-07-11</em></h4>
+<h4 class="date"><em>2018-10-17</em></h4>
 
 
 
-<p>This is an introductory vignette to the rzeit package. The package connects to the Content API and gives access to articles and corresponding metadata from the DIE ZEIT archive dating back to 1946 and from ZEIT Online. DIE ZEIT is the most widely read German weekly newspaper. The API can be used for free for non-commercial use cases. For the terms of use see <a href="http://developer.zeit.de/licence" class="uri">http://developer.zeit.de/licence</a> (German only at the moment).</p>
-<p>In short the package allows you to:</p>
-<ul>
-<li>conduct an unfiltered search for articles,</li>
-<li>use a variety of parameters to refine query fields, e.g. to specify content and time, and</li>
-<li>easily inspect meta as well as article data.</li>
-</ul>
-<p>The package is made publicly available at <a href="https://github.com/tollpatsch/rzeit">GitHub</a>. In this vignette I demonstrate basic features of the package. In a second vignette, I will dig deeper into the matter and show how the package can be used to download articles and calculate the sentiment for the respective articles.</p>
-<div id="setup" class="section level2">
-<h2>Setup</h2>
-<p>Currently, the package is only available on GitHub. Using the <code>devtools</code> package, you can easily install it:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">devtools<span class="op">::</span><span class="kw">install_github</span>(<span class="st">&quot;jandix/rzeit2&quot;</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(rzeit2)</code></pre></div>
-<p>To be able to work with the API, we have to fetch an API key first. There is no sophisticated authentication process involved here–just go to the <a href="http://developer.zeit.de/quickstart/">developer page</a> and sign up by providing your name and a valid email address.</p>
-<p>With <code>set_api_key()</code>, I provide a comfortable function that stores the key in the <code>R</code> environment. You only have to do this once; the next time <code>R</code> is launched this key is automatically available and fetched by the package’s functions:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set_api_key</span>(<span class="dt">api_key =</span> <span class="st">&quot;set_your_api_key_here&quot;</span>,
-            <span class="dt">path =</span> <span class="kw">tempdir</span>())</code></pre></div>
-<p>Next, we can start tapping the API. <code>get_content</code> represents the core function of the package. Again, because the api key is stored in the environment, we do not have to pass the key explicitly (but still could do so using the <code>api</code> argument). As an example, we collect articles that include “Merkel” in the article body, headline or byline:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">articles_merkel &lt;-<span class="st"> </span><span class="kw">get_content</span>(<span class="st">&quot;Merkel&quot;</span>,
-                               <span class="dt">limit =</span> <span class="dv">100</span>,
+<div id="authentication" class="section level3">
+<h3>Authentication</h3>
+<p>You need an API key to access the content endpoint. You can apply for a key at <a href="http://developer.zeit.de/quickstart/" class="uri">http://developer.zeit.de/quickstart/</a>. The function below appends the key automatically to your R environment file. Hence, every time you start R the key is loaded. <code>get_content</code> and <code>get_content_all</code> access your key automatically by executing <code>Sys.getenv(&quot;ZEIT_ONLINE_KEY&quot;)</code>. Replace <code>api_key</code> with the key you receive from ZEIT and <code>path</code> with the location of your R environment.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># save the api key in the .Renviron file</span>
+<span class="kw">set_api_key</span>(<span class="dt">api_key =</span> <span class="st">&quot;xxx&quot;</span>, 
+            <span class="dt">path =</span> <span class="st">&quot;~/.Renviron&quot;</span>)</code></pre></div>
+</div>
+<div id="download-meta-data" class="section level3">
+<h3>Download meta data</h3>
+<p><strong>Important:</strong> This function requires an API key. See <a href="#authentication">Authentication</a>.</p>
+<p>You can query the whole ZEIT and ZEIT ONLINE archive using the content endpoint. Define your query using the <code>query</code> argument. The API supports query syntax such as <code>+</code> and <code>AND/OR</code>. You find more information at the <a href="http://developer.zeit.de/docs/">ZEIT API documentation</a>. As stated above, <code>get_content</code> and <code>get_content_all</code> access your key automatically by executing <code>Sys.getenv(&quot;ZEIT_ONLINE_KEY&quot;)</code>, but you can provide a key by your own using the <code>api_key</code> argument.</p>
+<p><strong>Why are there two functions?</strong></p>
+<p>rzeit2 provides two functions to query the content endpoint: <code>get_content</code> and <code>get_content_all</code>. <code>get_content</code> supports only 1000 rows per call because of the API specifications. You can use <code>get_content_all</code> to derive all articles matching your query. Internally, <code>get_content_all</code> executes <code>get_content</code> but fills all the arguments automatically. Please set a timeout to be polite.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># fetch articles up to 1000 rows</span>
+tatort_articles &lt;-<span class="st"> </span><span class="kw">get_content</span>(<span class="dt">query =</span> <span class="st">&quot;Tatort&quot;</span>,
                                <span class="dt">begin_date =</span> <span class="st">&quot;20180101&quot;</span>,
-                               <span class="dt">end_date =</span> <span class="st">&quot;20180520&quot;</span>)</code></pre></div>
-<p>Note that for the ease of exposition, I limited the number of collected results to 100 here using the <code>limit</code> argument. The maximum limit per call is 1000. Further, I restricted the search to articles that were published in a time period of about one year.</p>
-<p>The results object is of class list and provides information about the articles found as well as the number of hits for a given period.</p>
-<p>If the number of tweets exceed the limit you should use the <code>get_content_all</code>. The function uses <code>get_content</code> under the hood. Hence, the query works the same way. The <code>timeout</code> argument define how long the function should wait between the api calls.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">articles_merkel &lt;-<span class="st"> </span><span class="kw">get_content_all</span>(<span class="st">&quot;Merkel&quot;</span>,
-                                   <span class="dt">timeout =</span> <span class="dv">1</span>,
-                                   <span class="dt">begin_date =</span> <span class="st">&quot;20150101&quot;</span>,
-                                   <span class="dt">end_date =</span> <span class="st">&quot;20180520&quot;</span>)</code></pre></div>
-<p>Lastly, you can check your api limit by using <code>get_client</code>. The function returns all information about your account and your daily limits.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">get_client</span>()</code></pre></div>
+                               <span class="dt">end_date =</span> <span class="st">&quot;20180131&quot;</span>)
+
+<span class="co"># fetch ALL articles</span>
+tatort_articles &lt;-<span class="st"> </span><span class="kw">get_content</span>(<span class="dt">query =</span> <span class="st">&quot;Tatort&quot;</span>,
+                               <span class="dt">timeout =</span> <span class="dv">2</span>)</code></pre></div>
+</div>
+<div id="download-text-vectorized" class="section level3">
+<h3>Download text (vectorized)</h3>
+<p><code>get_article_text</code> allows you to download the article text for a given url. The function is vectorized. Hence, you can define multiple urls. The function automatically scrapes all pages if the article has multiple pages. Please set a timeout to be polite.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tatort_content &lt;-<span class="st"> </span><span class="kw">get_article_text</span>(<span class="dt">url =</span> tatort_articles<span class="op">$</span>content<span class="op">$</span>href, 
+                                   <span class="dt">timeout =</span> <span class="dv">1</span>)</code></pre></div>
+</div>
+<div id="download-comments-not-vectorized" class="section level3">
+<h3>Download comments (not vectorized)</h3>
+<p><code>get_article_comments</code> allows you to download the article comments for a given url. The function is not vectorized. This function may take quite long due to the ZEIT ONLINE website structure. Since ZEIT does not provide an API for comments this function downloads all comments as your browser would do. Please set a timeout to be polite.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tatort_comments &lt;-<span class="st"> </span><span class="kw">get_article_comments</span>(<span class="dt">url =</span> tatort_articles<span class="op">$</span>content<span class="op">$</span>href[<span class="dv">1</span>], 
+                                        <span class="dt">timeout =</span> <span class="dv">1</span>)</code></pre></div>
+</div>
+<div id="download-images-vectorized" class="section level3">
+<h3>Download images (vectorized)</h3>
+<p><code>get_article_images</code> allows you to download the article images for a given url. The function is vectorized. Hence, you can define multiple urls. The function automatically scrapes all pages if the article has multiple pages. You can directly download the images if you define a path in <code>download</code>. Please ensure that the folder you define exists. The file name is derived as md5 hash of the image url. Hence, it should be un Please set a timeout to be polite.</p>
+<p>Please set a timeout to be polite.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tatort_images &lt;-<span class="st"> </span><span class="kw">get_article_images</span>(<span class="dt">url =</span> tatort_articles<span class="op">$</span>content<span class="op">$</span>href, 
+                                    <span class="dt">timeout =</span> <span class="dv">1</span>, 
+                                    <span class="dt">download =</span> <span class="st">&quot;~/Documents/tatort-img/&quot;</span>)</code></pre></div>
 </div>
 
 
